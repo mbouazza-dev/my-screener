@@ -65,18 +65,6 @@ def get_eth_btc_ratio():
     data = requests.get(url).json()
     return data["ethereum"]["usd"] / data["bitcoin"]["usd"]
 
-# Mail alerting
-def send_alert(message):
-    msg = MIMEText(message)
-    msg["Subject"] = "🚨 Signal Altseason détecté"
-    msg["From"] = "mehdbest.king@gmail.com"
-    msg["To"] = "mbouazzapro@gmail.com"
-
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login("mehdbest.king@gmail.com", "ton_mot_de_passe_app")
-        server.send_message(msg)
-
 btc_dom = get_btc_dominance()
 eth_btc = get_eth_btc_ratio()
 total_marketcap = get_total3_marketcap()
@@ -85,6 +73,7 @@ trends = get_trending_coins()
 f_g = get_fear_greed()
 sector_rotate = get_top_sectors()
 
+kpi_essential = 0
 kpi_count = 0
 
 st.title('KPIs state')
@@ -92,25 +81,28 @@ st.divider()
 
 left_col, right_col = st.columns([1, 1])
 with left_col:
-    if (btc_dom < 48):
-        st.header('Bitcoin dominance : ✅')
-        st.subheader(f"Valeur: {btc_dom:.2f}%")
-        kpi_count += 1
-    else:
-        st.header('Bitcoin dominance : ❌')
-        st.subheader(f"Valeur: {btc_dom:.2f}%")
-    st.caption("Quand la dominance du BTC baisse après une phase haussière prolongée → signal que les capitaux se déplacent vers les alts. Seuils souvent observés : une cassure baissière de la dominance sous 50-48 % est un déclencheur fréquent.")
-    st.divider()
 
-    if (eth_btc > 0.06):
-        st.header('ETH/BTC ratio : ✅')
-        st.subheader(f"Valeur: {eth_btc:.4f}")
-        kpi_count += 1
-    else:
-        st.header('ETH/BTC ratio : ❌')
-        st.subheader(f"Valeur: {eth_btc:.4f}")
-    st.caption("Quand l'ETH surperforme le BTC (ETH/BTC > 0,06) → signal que les investisseurs se tournent vers les altcoins. Seuils souvent observés : un ratio ETH/BTC supérieur à 0,06 indique une tendance haussière pour les alts.")
-    st.divider()
+    with st.container():
+        if (btc_dom < 48):
+            st.header('1️⃣ Bitcoin dominance : ✅')
+            st.subheader(f"Valeur: {btc_dom:.2f}%")
+            kpi_essential += 1
+        else:
+            st.header('1️⃣ Bitcoin dominance : ❌')
+            st.subheader(f"Valeur: {btc_dom:.2f}%")
+        st.caption("Quand la dominance du BTC baisse après une phase haussière prolongée → signal que les capitaux se déplacent vers les alts. Seuils souvent observés : une cassure baissière de la dominance sous 50-48 % est un déclencheur fréquent.")
+        st.divider()
+
+        if (eth_btc > 0.06):
+            st.header('2️⃣ ETH/BTC ratio : ✅')
+            st.subheader(f"Valeur: {eth_btc:.4f}")
+            kpi_essential += 1
+        else:
+            st.header('2️⃣ ETH/BTC ratio : ❌')
+            st.subheader(f"Valeur: {eth_btc:.4f}")
+        st.caption("Quand l'ETH surperforme le BTC (ETH/BTC > 0,06) → signal que les investisseurs se tournent vers les altcoins. Seuils souvent observés : un ratio ETH/BTC supérieur à 0,06 indique une tendance haussière pour les alts.")
+    
+    st.header("📈 Indicateurs Secondaires", divider="gray")
 
     if (int(f_g["value"]) > 60):
         st.header('Sentiment (Fear & Greed) : ✅')
@@ -144,26 +136,32 @@ with left_col:
 
     if (len(trends) >= 5):
         st.header('Nombre de coins en tendance : ✅')
-        st.subheader(f"Valeur: {', '.join(trends[:5])}")
+        st.subheader(f"Valeurs: {', '.join(trends[:5])}")
         kpi_count += 1
     else:
         st.header('Nombre de coins en tendance : ❌')
-        st.subheader(f"Valeur: {', '.join(trends[:5])}")
+        st.subheader(f"Valeurs: {', '.join(trends[:5])}")
     st.caption("Quand au moins 5 coins sont en tendance sur CoinGecko → signal que les investisseurs se tournent vers les altcoins. Seuils souvent observés : la présence d'au moins 5 coins en tendance indique une tendance haussière pour les alts.")
     st.divider()
 
     if (any(cat["market_cap"] > 10_000_000_000 for cat in sector_rotate)):
-        st.header('Rotation sectorielle" : ✅')
-        st.subheader(f"Top sectors: {[cat['name'] for cat in sector_rotate[:3]]}")
+        st.header('Rotation sectorielle : ✅')
+        st.subheader(f"Valeurs: {[cat['name'] for cat in sector_rotate[:3]]}")
         kpi_count += 1
     else:
-        st.header('Rotation sectorielle" : ❌')
-        st.subheader(f"Top sectors: {[cat['name'] for cat in sector_rotate[:3]]}")
+        st.header('Rotation sectorielle : ❌')
+        st.subheader(f"Valeurs: {[cat['name'] for cat in sector_rotate[:3]]}")
     st.caption("Quand au moins un secteur a une capitalisation de marché supérieure à 10 milliards de dollars → signal que les investisseurs se tournent vers les altcoins. Seuils souvent observés : la présence d'au moins un secteur avec une capitalisation de marché supérieure à 10 milliards de dollars indique une tendance haussière pour les alts.")
     st.divider()
 with right_col:
     st.header(f"Etats des indicateurs : {kpi_count} / 7")
-    notes = st.text_area("Ajoutez vos observations ici", height=800)
-    if st.button("Sauvegarder les notes"):
-
-        st.success("Notes sauvegardées!")
+    st.subheader("Interprétation des résultats", divider="gray")
+    if kpi_essential==2 & kpi_count >= 2:
+        st.success("🏃‍➡️ Début d'altseason probable !")
+    elif kpi_essential==2 & kpi_count >= 4:
+        st.success("🚀 Altseason confirmée !")
+    else:
+        st.error("⛔️ Pas d'altseason pour le moment.")
+    st.caption("Si 2 primaires + au moins 2 secondaires sont validés → début d’alt season probable.")
+    st.caption("Si 2 primaires + 4 ou 5 secondaires sont validés → alt season confirmée.")
+    st.caption("Si uniquement les secondaires sans les primaires → c’est plutôt un mini-alt rally local, pas une alt season complète.")
