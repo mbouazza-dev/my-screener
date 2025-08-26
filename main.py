@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 
 st.set_page_config(layout="wide")
 BASE_URL = f"{'https://api.coingecko.com/api/v3/'}"
-API_KEY = st.secrets["API_KEY]
+API_KEY = st.secrets["API_KEY"]
 
 headers = {
     "accept": "application/json",
