@@ -169,30 +169,30 @@ with col1:
     col_main, col_var1, col_var2 = st.columns([2, 1, 1])
     with col_main:
         st.metric(
-            label="Rendement 10 ans 5j", 
+            label="Rendement 10 ans (delta 5j)", 
             value=f"{macro_df['^TNX'].iloc[-1]:.2f}%", 
             delta=f"{tnx_change5d:.2f}", 
             delta_color="inverse"
         )
     with col_var1:
-        st.metric("15j", "", f"{tnx_change15d:.2f}", delta_color="inverse")
+        st.metric("Il y a 15j", f"{macro_df['^TNX'].iloc[-15]:.2f}%")
     with col_var2:
-        st.metric("30j", "", f"{tnx_change30d:.2f}", delta_color="inverse")
+        st.metric("Il y a 30j", f"{macro_df['^TNX'].iloc[-30]:.2f}%")
 
     # 2. Dollar Index
     st.subheader("2. Dollar Index (DXY)", help="Une hausse de la force du Dollar tend à drainer la liquidité des marchés mondiaux. C'est a dire que le dollar devient un refuge pour les investisseurs qui retirent leur argent des actifs risqués.")
     col_main, col_var1, col_var2 = st.columns([2, 1, 1])
     with col_main:
         st.metric(
-        label="Force du Dollar 5j", 
+        label="Force du Dollar (delta 5j)", 
         value=f"{macro_df['DX-Y.NYB'].iloc[-1]:.2f}", 
-        delta=f"{dxy_change5d:.2f} (5j)", 
+        delta=f"{dxy_change5d:.2f}", 
         delta_color="inverse"
         )
     with col_var1:
-        st.metric("15j", "", f"{dxy_change15d:.2f}", delta_color="inverse")
+        st.metric("Il y a 15j", f"{macro_df['DX-Y.NYB'].iloc[-15]:.2f}")
     with col_var2:
-        st.metric("30j", "", f"{dxy_change30d:.2f}", delta_color="inverse")
+        st.metric("Il y a 30j", f"{macro_df['DX-Y.NYB'].iloc[-30]:.2f}")
 
     # 3. SPY/TLT (Risk Appetite)
     st.subheader("3. Appétit pour le risque (SPY/TLT)", help="Un ratio SPY/TLT en hausse indique que les investisseurs préfèrent les actions aux obligations, signe d'un appétit pour le risque (Risk-On). A l'inverse, une baisse du ratio indique une préférence pour les obligations, signe de prudence (Risk-Off).")
@@ -205,45 +205,60 @@ with col1:
         delta="Risk ON" if is_risk_on else "Risk OFF",
         delta_color="normal" if is_risk_on else "off"
         )
-    with col_var1:
-        is_risk_on = ratio_trend15d > 0
-        st.metric("15j", f"{spy_tlt_ratio.iloc[-15]:.2f}", "Risk ON" if is_risk_on else "Risk OFF", delta_color="normal" if is_risk_on else "off")
-    with col_var2:
-        is_risk_on = ratio_trend30d > 0
-        st.metric("30j", f"{spy_tlt_ratio.iloc[-30]:.2f}", "Risk ON" if is_risk_on else "Risk OFF", delta_color="normal" if is_risk_on else "off")
     st.line_chart(spy_tlt_ratio.tail(30))
 
 with col2:
     st.header("🔬 Micro & Crypto Flows")
 
     # 4. Rotation Sectorielle
-    st.subheader("4. Tech Rotation (XLK/SPY)")
+    st.subheader("4. Tech Rotation (XLK/SPY)", help="Un ratio XLK/SPY en hausse indique que les investisseurs favorisent le secteur technologique par rapport au marché global, signe de confiance et d'appétit pour le risque. A l'inverse, une baisse du ratio suggère une rotation vers des secteurs plus défensifs.")
     col_main, col_var1, col_var2 = st.columns([2, 1, 1])
     with col_main:
         is_risk_on = ratio_trend5d > 0
         st.metric(
-        label="Force Relative Tech vs S&P500 5j",
+        label="Force Relative Tech vs S&P500 (delta 5j)",
         value=f"{xlk_spy_ratio.iloc[-1]:.4f}",
         delta="Tech Leader" if rotation_trend5d > 0 else "Tech Lagging"
         )
-    with col_var1:
-        is_risk_on = ratio_trend15d > 0
-        st.metric("15j", f"{xlk_spy_ratio.iloc[-15]:.4f}", "Tech Leader" if rotation_trend15d > 0 else "Tech Lagging")
-    with col_var2:
-        is_risk_on = ratio_trend30d > 0
-        st.metric("30j", f"{xlk_spy_ratio.iloc[-30]:.4f}", "Tech Leader" if rotation_trend30d > 0 else "Tech Lagging")
     
     # 5. Indicateurs de Volume BTC
     st.subheader("5. Bitcoin KPIs")
-    st.metric("BTC price (30j)", btc_df['Close'].iloc[-1].round(2))
-    st.line_chart(btc_df['Close'].tail(30).round(2))
+    test = btc_df['Close'].iloc[-1] - btc_df['Close'].iloc[-8]
+    st.metric("BTC price (7j)", btc_df['Close'].iloc[-1].round(2), round(float( (btc_df['Close'].iloc[-1]-btc_df['Close'].shift(7).iloc[-1])/btc_df['Close'].shift(7).iloc[-1]*100 ),2))
+    st.line_chart(btc_df['Close'].tail(7).round(2))
     
     c1, c2, c3 = st.columns(3)
     c1.metric("OBV Trend 5j", obv_trend5d, help="On Balance Volume (Cumul des volumes): Si le prix d'une action stagne ou baisse légèrement, mais que l'OBV monte (divergence), c'est que des institutionnels ramassent le titre discrètement (Accumulation).")
     c2.metric("15j", obv_trend15d)
     c3.metric("30j", obv_trend30d)
-    c1.metric("MFI (14)", f"{float(current_mfi):.0f}", help="Money Flow Index: >80 Surchauffe, <20 Survente")
-    c2.metric("Prix vs VWAP", "Bullish" if price_vs_vwap.item() else "Bearish", help="Si Prix > VWAP = Acheteurs en contrôle")
+    c1.metric("MFI (14)", f"{float(current_mfi):.0f}", help="Money Flow Index, détecte la pression acheteuse ou vendeuse réelle: >80 Surchauffe, <20 Survente")
+    # Affiche le metric sans utiliser le paramètre `help` (les tooltips perdent souvent le formatage).
+    # On fournit à la place un expander adjacent contenant le texte formaté avec paragraphes et listes.
+    c2.metric("Prix vs VWAP", "Bullish" if price_vs_vwap.item() else "Bearish")
+    with c2.expander("Détails VWAP — aide"): 
+        st.markdown(
+            """
+Si Prix > VWAP (Volume Weighted Average Price) = Acheteurs en contrôle — c'est une question de psychologie de foule mesurée par le VWAP (Prix Moyen Pondéré par le Volume).
+
+Imaginez que le VWAP de la journée sur une action soit de 100 €. Cela signifie que le prix moyen payé par tout le monde (petits et gros acteurs) depuis l'ouverture est de 100 €.
+
+Si le prix actuel est de 102 € (Au-dessus du VWAP) :
+
+- La majorité des gens qui ont acheté aujourd'hui sont en gain (ils sont "verts").
+- Ils sont confiants, ils ne paniquent pas.
+- Les vendeurs à découvert (short sellers) sont en perte et peuvent être forcés d'acheter pour se couvrir, ce qui pousse le prix encore plus haut.
+
+Conclusion : Les acheteurs ont la main ("Control"), le chemin de moindre résistance est la hausse.
+
+Si le prix actuel est de 98 € (En dessous du VWAP) :
+
+- L'acheteur moyen du jour perd de l'argent.
+- Si le prix remonte à 100 €, ces acheteurs piégés vont souvent revendre pour sortir "breakeven" (ni gain ni perte). Cela crée une résistance.
+
+Conclusion : Les vendeurs dominent.
+            """,
+            unsafe_allow_html=False,
+        )
 
     # 6. Liquidité Stablecoin
     st.subheader("6. Stablecoins Volume")
